@@ -1,0 +1,17 @@
+{
+  "name": "tcs-invest",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "@tinkoff/invest-openapi-js-sdk": "^1.2.16",
+    "axios": "^0.21.1",
+    "chalk": "^4.1.0",
+    "dotenv": "^8.2.0",
+    "sqlite3": "^5.0.1"
+  },
+  "bin": {
+    "execute": "index.js"
+  }
+}

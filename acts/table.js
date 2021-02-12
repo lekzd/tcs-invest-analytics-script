@@ -4,13 +4,18 @@ const { Position } = require('../models/Position');
 const { env } = require('../modules/env');
 
 const { getPortfolio } = require('../modules/tinkoffInvest');
-const { getQuoteModules, searchForPosition } = require('../modules/yahooFinance');
+const { getQuoteModules, searchForPosition, searchForPositionByTicker } = require('../modules/yahooFinance');
 
-const getPositionModel = async (ticker, isin) => {
+const getPositionModel = async ({ticker, isin, expectedYield}) => {
   let position = await Position.getByTicker(ticker);
 
   if (!position) {
-    const positionInfo = (await searchForPosition(isin)) || (await searchForPosition(ticker));
+    const yahooTicker = expectedYield.currency === 'RUB'
+      ? `${ticker}.ME`
+      : ticker;
+
+    const positionInfo = (await searchForPositionByTicker(yahooTicker)) || (await searchForPosition(isin));
+
     const { assetProfile } = await getQuoteModules(positionInfo?.symbol ?? ticker, ['assetProfile']);
 
     position = await Position.create(ticker, isin, positionInfo, assetProfile);
@@ -37,7 +42,7 @@ module.exports = async (args) => {
 
     for (let i = 0; i < positions.length; i++) {
       const position = positions[i];
-      const positionModel = await getPositionModel(position.ticker, position.isin);
+      const positionModel = await getPositionModel(position);
 
       table[positionModel[groupBy]] = table[positionModel[groupBy]] || [];
 

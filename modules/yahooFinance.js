@@ -2,6 +2,17 @@ const axios = require("axios");
 
 const host = 'https://query1.finance.yahoo.com';
 
+const searchForPositionByTicker = (ticker) => {
+  const url = `${host}/v1/finance/search?q=${ticker}&quotesCount=10&newsCount=0`;
+
+  return axios(url)
+    .then(response => {
+      const { data: {quotes}} = response;
+
+      return quotes.find(({ symbol }) => symbol === ticker);
+    });
+}
+
 const searchForPosition = (isinOrTicker) => {
   const url = `${host}/v1/finance/search?q=${isinOrTicker}&quotesCount=1&newsCount=0`;
 
@@ -27,8 +38,14 @@ const getQuoteModules = (ticker, modules = []) => {
       return result[0];
     })
     .catch(() => {
-      return null;
+      const result = {};
+
+      modules.forEach(key => {
+        result[key] = {};
+      })
+
+      return result;
     })
 }
 
-module.exports = { getQuoteModules, searchForPosition };
+module.exports = { getQuoteModules, searchForPosition, searchForPositionByTicker };

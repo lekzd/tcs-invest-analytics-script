@@ -12,7 +12,7 @@ const getPositionModel = async (query) => {
 
   const ticker = positionInfo?.symbol ?? '';
 
-  const data = await getQuoteModules(ticker, ['assetProfile', 'financialData', 'recommendationTrend']);
+  const data = await getQuoteModules(ticker, ['assetProfile', 'financialData', 'defaultKeyStatistics']);
 
   return {
     ticker,

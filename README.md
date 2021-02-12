@@ -22,6 +22,12 @@ Your portfolio table grouped by asset param from Yahoo Finance API
 
 Best search result based on Yahoo Finance API
 
+### `node index.js compare tickers=NOC,PFE,REGN,VRTX,ZGNX`
+
+![Asset](/images/compare.png)
+
+Compare stocks using tickers (Yahoo finance tickers) 
+
 ## Installation
 
 `yarn && touch .env`

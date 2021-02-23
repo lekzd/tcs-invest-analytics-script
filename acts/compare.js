@@ -1,9 +1,6 @@
 const chalk = require('chalk');
-const { db } = require('../modules/db');
-const { Position } = require('../models/Position');
-const { env } = require('../modules/env');
+const stringLength = require('string-length');
 
-const { getPortfolio } = require('../modules/tinkoffInvest');
 const { getQuoteModules, searchForPosition } = require('../modules/yahooFinance');
 
 const getPositionModel = async (query) => {
@@ -24,11 +21,25 @@ const getPositionModel = async (query) => {
   }
 }
 
+const redGreen = (value, border = 0) => {
+  if (value == null) {
+    return '-';
+  }
+  return parseFloat(value, 10) > border ? chalk.green(value) : chalk.red(value);
+}
+
+const greenRed = (value, border = 0) => {
+  if (value == null) {
+    return '-';
+  }
+  return parseFloat(value, 10) < border ? chalk.green(value) : chalk.red(value);
+}
+
 const paramsConfig = {
-  'Ticker': (m) => m.ticker,
+  'Ticker': (m) => chalk.bold(m.ticker),
   'Sector': (m) => m.assetProfile?.sector ?? '-',
-  'Audit Risk': (m) => m.assetProfile?.auditRisk ?? '-',
-  'Overall Risk': (m) => m.assetProfile?.overallRisk ?? '-',
+  'Audit Risk': (m) => greenRed(m.assetProfile?.auditRisk, 5),
+  'Overall Risk': (m) => greenRed(m.assetProfile?.overallRisk, 5),
   'Currency': (m) => m.financialData?.financialCurrency ?? '-',
   'Current Price': (m) => m.financialData?.currentPrice?.fmt ?? '-',
   'Target High Price': (m) => {
@@ -36,16 +47,17 @@ const paramsConfig = {
     const targetPrice = m.financialData?.targetHighPrice?.raw ?? 0;
     const percent = ((targetPrice - price) / price) * 100;
 
-    return (m.financialData?.targetHighPrice?.fmt ?? '-') + ` (${percent.toFixed(2)}%)`;
+    return (m.financialData?.targetHighPrice?.fmt ?? '-') + ` (${redGreen(`${percent.toFixed(2)}%`)})`;
   },
   'Target Low Price': (m) => {
     const price = m.financialData?.currentPrice?.raw ?? 0;
     const targetPrice = m.financialData?.targetLowPrice?.raw ?? 0;
     const percent = ((targetPrice - price) / price) * 100;
 
-    return (m.financialData?.targetLowPrice?.fmt ?? '-') + ` (${percent.toFixed(2)}%)`;
+    return (m.financialData?.targetLowPrice?.fmt ?? '-') + ` (${redGreen(`${percent.toFixed(2)}%`)})`;
   },
-  'Quick Ratio': (m) => m.financialData?.quickRatio?.fmt ?? '-',
+  'Quick Ratio': (m) => redGreen(m.financialData?.quickRatio?.fmt, 1),
+  'Beta Ratio': (m) => greenRed(m.defaultKeyStatistics?.beta?.fmt, 1),
   'P/E': (m) => {
     const price = m.financialData?.currentPrice?.raw ?? 0;
     const eps = m.defaultKeyStatistics?.trailingEps?.raw ?? 0;
@@ -53,7 +65,16 @@ const paramsConfig = {
     return (price / eps).toFixed(2);
   },
   'Recommendation': (m) => {
-    return m.financialData?.recommendationKey ?? '-'
+    switch (m.financialData?.recommendationKey) {
+      case 'buy':
+        return chalk.green('buy');
+      case 'sell':
+        return 'sell';
+      case 'hold':
+        return chalk.yellow('hold');
+      default:
+        return '-';
+    }
   },
 }
 
@@ -70,7 +91,6 @@ module.exports = async (args) => {
   const {tickers = ''} = argsParsed;
 
   const tickersList = tickers.split(',');
-  const paramsList = ['currentPrice', 'targetHighPrice', 'targetLowPrice', 'recommendationKey'];
 
   const assets = [];
 
@@ -92,7 +112,7 @@ module.exports = async (args) => {
 
   table.forEach((row) => {
     row.forEach((col, colIndex) => {
-      columnMaxSizes[colIndex] = Math.max(columnMaxSizes[colIndex], `${col}`.length + 2);
+      columnMaxSizes[colIndex] = Math.max(columnMaxSizes[colIndex], stringLength(`${col}`) + 2);
     })
   })
 
@@ -100,7 +120,9 @@ module.exports = async (args) => {
     let rowString = '';
 
     rowString = row.map((col, i) => {
-      return ` ${col}`.padEnd(columnMaxSizes[i], ' ');
+      const template = ` ${col}`;
+      const diff = template.length - stringLength(template);
+      return template.padEnd(columnMaxSizes[i] + diff, ' ');
     }).join(chalk.magentaBright('|'));
 
     console.log(chalk.magentaBright(`|`) + rowString + chalk.magentaBright('|'));
